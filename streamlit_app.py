@@ -23,7 +23,7 @@ def run_query(query):
 # SIDEBAR - Navigation and State Filter
 # ============================================================
 st.sidebar.title("🏥 NASTAD TMSIS Dashboard")
-st.sidebar.markdown("Medicaid Provider Analysis for **Ending the HIV Epidemic**")
+st.sidebar.markdown("Medicaid Provider and HIV Service Analysis")
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
@@ -80,7 +80,7 @@ def year_filter(alias=""):
 
 st.sidebar.markdown("---")
 st.sidebar.caption("**Data:** CMS TMSIS 2018–2024")
-st.sidebar.caption("**Records:** 227M enriched claims")
+st.sidebar.caption("**Records:** 227M enriched T-MSIS records")
 st.sidebar.caption("**Updated:** February 2026")
 st.sidebar.caption("Built by NASTAD")
 
@@ -145,7 +145,6 @@ if page == "ℹ️ About":
     | **Data Enrichment** | DuckDB SQL | Joins TMSIS claims with NPI provider data via billing NPI |
     | **Front-End** | Streamlit | Interactive dashboard with live queries, filters, and CSV export |
     | **Hosting** | Streamlit Community Cloud | Free public hosting — no software install required for end users |
-    | **Data Backup** | Cloudflare R2 | Object storage for raw data files |
 
     All queries run **live** against the full dataset — nothing is pre-aggregated or sampled. When you 
     filter by state or view the provider directory, MotherDuck processes the query across all 227 million 
@@ -188,8 +187,7 @@ if page == "ℹ️ About":
 
     ### 📬 Contact
 
-    For questions, feedback, or technical assistance, please contact **NASTAD** at 
-    [nastad.org](https://www.nastad.org).
+    For questions, feedback, or technical assistance, please contact medicaidscp@nastad.org (https://www.nastad.org).
 
     *This dashboard is part of NASTAD's technical assistance to support public health departments 
     in ending the HIV epidemic through improved Medicaid and Ryan White program coordination.*
