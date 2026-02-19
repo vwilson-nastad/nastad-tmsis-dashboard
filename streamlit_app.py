@@ -97,8 +97,7 @@ if page == "ℹ️ About":
     This dashboard was developed by **NASTAD** (National Alliance of State & Territorial AIDS Directors) 
     to support health departments and Ryan White HIV/AIDS Program recipients in identifying Medicaid 
     providers delivering HIV-related services, conducting provider gap analyses, and strengthening 
-    coordination between Medicaid and the Ryan White HIV/AIDS Program as part of the national 
-    **Ending the HIV Epidemic (EHE)** initiative.
+    coordination between Medicaid and the Ryan White HIV/AIDS Program.
 
     ---
 
