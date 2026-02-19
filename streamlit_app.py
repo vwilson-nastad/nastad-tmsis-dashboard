@@ -358,8 +358,7 @@ if page == "ℹ️ About":
 
     ### 📬 Contact
 
-    For questions, feedback, or technical assistance, please contact **NASTAD** at 
-    [nastad.org](https://www.nastad.org).
+    For questions, feedback, or technical assistance, please contact **medicaidscp@nastad.org** (https://www.nastad.org).
 
     *This dashboard is part of NASTAD's technical assistance to support public health departments 
     in ending the HIV epidemic through improved Medicaid and Ryan White program coordination.*
