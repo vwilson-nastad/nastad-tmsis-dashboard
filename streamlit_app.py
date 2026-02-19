@@ -5,6 +5,108 @@ import pandas as pd
 st.set_page_config(page_title="NASTAD TMSIS Dashboard", page_icon="🏥", layout="wide")
 
 # ============================================================
+# NASTAD BRAND THEMING
+# Colors from NASTAD Style Guide (January 2022)
+# Primary Blue: #019DE0 | Light Blue: #68D2F2 | Dark Blue: #0F369B
+# Black: #060606 | Light Gray: #EBEBEB | Red: #EB3F21 | Yellow: #FFCC11
+# ============================================================
+st.markdown("""
+<style>
+    /* --- NASTAD Brand Colors --- */
+    :root {
+        --nastad-blue: #019DE0;
+        --nastad-light-blue: #68D2F2;
+        --nastad-dark-blue: #0F369B;
+        --nastad-black: #060606;
+        --nastad-gray: #EBEBEB;
+        --nastad-red: #EB3F21;
+        --nastad-yellow: #FFCC11;
+    }
+
+    /* Header bar */
+    header[data-testid="stHeader"] {
+        background-color: #060606;
+    }
+
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #060606;
+        color: white;
+    }
+    section[data-testid="stSidebar"] .stMarkdown p,
+    section[data-testid="stSidebar"] .stMarkdown li,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] .stRadio label {
+        color: white !important;
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: #333333;
+    }
+
+    /* Metric cards */
+    div[data-testid="stMetric"] {
+        background-color: #EBEBEB;
+        border-left: 4px solid #019DE0;
+        padding: 12px 16px;
+        border-radius: 4px;
+    }
+    div[data-testid="stMetric"] label {
+        color: #0F369B !important;
+        font-weight: 600;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #060606 !important;
+    }
+
+    /* Primary buttons */
+    .stDownloadButton button {
+        background-color: #019DE0 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 4px;
+    }
+    .stDownloadButton button:hover {
+        background-color: #0F369B !important;
+    }
+
+    /* Tab styling */
+    button[data-baseweb="tab"] {
+        color: #0F369B !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        border-bottom-color: #019DE0 !important;
+    }
+
+    /* Info and warning boxes */
+    div[data-testid="stAlert"] {
+        border-radius: 4px;
+    }
+
+    /* Page titles */
+    h1 {
+        color: #0F369B !important;
+    }
+    h2, h3 {
+        color: #060606 !important;
+    }
+
+    /* Links */
+    a {
+        color: #019DE0 !important;
+    }
+    a:hover {
+        color: #0F369B !important;
+    }
+
+    /* Dataframe header */
+    .stDataFrame th {
+        background-color: #019DE0 !important;
+        color: white !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ============================================================
 # DATABASE CONNECTION
 # ============================================================
 @st.cache_resource
@@ -22,8 +124,18 @@ def run_query(query):
 # ============================================================
 # SIDEBAR - Navigation and State Filter
 # ============================================================
-st.sidebar.title("🏥 NASTAD TMSIS Dashboard")
-st.sidebar.markdown("Medicaid Provider and HIV Service Analysis")
+st.sidebar.markdown("""
+<div style="text-align: center; padding: 10px 0 5px 0;">
+    <span style="color: #68D2F2; font-size: 28px; font-weight: bold;">NASTAD</span>
+    <br>
+    <span style="color: white; font-size: 14px;">TMSIS Medicaid Dashboard</span>
+</div>
+""", unsafe_allow_html=True)
+st.sidebar.markdown(
+    '<p style="color: #68D2F2; text-align: center; font-size: 13px;">'
+    'Medicaid Provider Analysis for<br><strong>Ending the HIV Epidemic</strong></p>',
+    unsafe_allow_html=True
+)
 st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
@@ -79,10 +191,14 @@ def year_filter(alias=""):
     return ""
 
 st.sidebar.markdown("---")
-st.sidebar.caption("**Data:** CMS TMSIS 2018–2024")
-st.sidebar.caption("**Records:** 227M enriched T-MSIS records")
-st.sidebar.caption("**Updated:** February 2026")
-st.sidebar.caption("Built by NASTAD")
+st.sidebar.markdown(
+    '<p style="color: #68D2F2; font-size: 11px;">'
+    '<strong>Data:</strong> CMS T-MSIS 2018–2024<br>'
+    '<strong>Records:</strong> 227M enriched claims<br>'
+    '<strong>Updated:</strong> February 2026<br><br>'
+    'Built by <strong>NASTAD</strong></p>',
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
@@ -97,7 +213,8 @@ if page == "ℹ️ About":
     This dashboard was developed by **NASTAD** (National Alliance of State & Territorial AIDS Directors) 
     to support health departments and Ryan White HIV/AIDS Program recipients in identifying Medicaid 
     providers delivering HIV-related services, conducting provider gap analyses, and strengthening 
-    coordination between Medicaid and the Ryan White HIV/AIDS Program.
+    coordination between Medicaid and the Ryan White HIV/AIDS Program as part of the national 
+    **Ending the HIV Epidemic (EHE)** initiative.
 
     ---
 
@@ -115,9 +232,9 @@ if page == "ℹ️ About":
     - **Source:** [CMS T-MSIS Data](https://www.medicaid.gov/medicaid/data-systems/macbis/transformed-medicaid-statistical-information-system-t-msis/index.html)
 
     **National Plan and Provider Enumeration System (NPPES) — CMS**
-    - **What it is:** The NPPES is CMS's registry of all healthcare providers assigned a National 
+    - **What it is:** The NPPES is CMS's registry of all health care providers assigned a National 
       Provider Identifier (NPI). It contains provider names, credentials, practice addresses, 
-      organizational affiliations, and healthcare taxonomy codes.
+      organizational affiliations, and health care taxonomy codes.
     - **What we use:** Provider demographic and practice location data to enrich the TMSIS claims, 
       enabling identification of providers by name, organization, specialty, and geographic location.
     - **Source:** [CMS NPI Registry](https://npiregistry.cms.hhs.gov/)
@@ -144,6 +261,7 @@ if page == "ℹ️ About":
     | **Data Enrichment** | DuckDB SQL | Joins TMSIS claims with NPI provider data via billing NPI |
     | **Front-End** | Streamlit | Interactive dashboard with live queries, filters, and CSV export |
     | **Hosting** | Streamlit Community Cloud | Free public hosting — no software install required for end users |
+    | **Data Backup** | Cloudflare R2 | Object storage for raw data files |
 
     All queries run **live** against the full dataset — nothing is pre-aggregated or sampled. When you 
     filter by state or view the provider directory, MotherDuck processes the query across all 227 million 
@@ -186,7 +304,8 @@ if page == "ℹ️ About":
 
     ### 📬 Contact
 
-    For questions, feedback, or technical assistance, please contact medicaidscp@nastad.org (https://www.nastad.org).
+    For questions, feedback, or technical assistance, please contact **NASTAD** at 
+    [nastad.org](https://www.nastad.org).
 
     *This dashboard is part of NASTAD's technical assistance to support public health departments 
     in ending the HIV epidemic through improved Medicaid and Ryan White program coordination.*
