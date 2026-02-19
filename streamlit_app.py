@@ -28,7 +28,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["ℹ️ About", "🏠 State Overview", "🔬 HIV Services", "👩‍⚕️ Provider Directory", "📈 Trends"],
+    ["ℹ️ About", "📋 HCPCS Reference", "🏠 State Overview", "🔬 HIV Services", "👩‍⚕️ Provider Directory", "📈 Trends"],
 )
 
 st.sidebar.markdown("---")
@@ -75,7 +75,8 @@ if page == "ℹ️ About":
     This dashboard was developed by **NASTAD** (National Alliance of State & Territorial AIDS Directors) 
     to support health departments and Ryan White HIV/AIDS Program recipients in identifying Medicaid 
     providers delivering HIV-related services, conducting provider gap analyses, and strengthening 
-    coordination between Medicaid and the Ryan White HIV/AIDS Program.
+    coordination between Medicaid and the Ryan White HIV/AIDS Program as part of the national 
+    **Ending the HIV Epidemic (EHE)** initiative.
 
     ---
 
@@ -102,10 +103,15 @@ if page == "ℹ️ About":
 
     **HIV HCPCS Reference Table — NASTAD**
     - **What it is:** A curated crosswalk developed by NASTAD that maps HCPCS procedure codes to 
-      HIV-specific service categories.
-    - **Categories:** HIV Lab Testing, Antiretroviral Therapy, PrEP, Care Management, 
-      Case Management, Opportunistic Infection Treatment, and Quality Measures.
-    - **Codes tracked:** 27 HIV-related HCPCS codes across 7 service categories.
+      HIV-specific service categories. This table was built using the **CMS HCPCS 2025 Annual Code File** 
+      and validated against published HIV claims-based case-finding algorithms, including Macinski et al. 
+      (2019), *"Validation of an Optimized Algorithm for Identifying Persons Living with Diagnosed HIV 
+      From New York State Medicaid Data, 2006–2014."*
+    - **Categories:** HIV Screening & Diagnosis, HIV Lab Monitoring, Antiretroviral Therapy, PrEP, 
+      OI Prophylaxis & Treatment, HIV Quality Measures, and HIV Supportive Services.
+    - **Codes tracked:** 67 HIV-related HCPCS codes across 7 service categories.
+    - **Full transparency:** See the **📋 HCPCS Reference** page for the complete code table with 
+      every code, category, and description.
 
     ---
 
@@ -147,8 +153,10 @@ if page == "ℹ️ About":
       providers or service months. These are not deduplicated person-level counts.
     - **Small cell sizes:** In states or service categories with very few providers or beneficiaries, 
       exercise caution in interpretation to protect against potential re-identification.
-    - **HCPCS code specificity:** Some codes in the reference table (particularly Care Management codes) 
-      are not exclusively HIV-specific. They capture a broader set of services that may include non-HIV visits.
+    - **HCPCS code specificity:** The HIV HCPCS reference table prioritizes codes that are explicitly 
+      HIV-related. Some OI treatment codes (e.g., amphotericin B, ganciclovir) are used for conditions 
+      beyond HIV but are included because they are standard treatments for HIV-associated opportunistic 
+      infections. See the **📋 HCPCS Reference** page for the full code list and methodology.
     - **Data currency:** This dashboard reflects TMSIS data through 2024. CMS releases data with a lag, 
       so the most recent months may be incomplete.
     - **Provider location** is based on the NPI registry practice address and may not reflect every 
@@ -163,6 +171,116 @@ if page == "ℹ️ About":
 
     *This dashboard is part of NASTAD's technical assistance to support public health departments 
     in ending the HIV epidemic through improved Medicaid and Ryan White program coordination.*
+    """)
+
+
+# ============================================================
+# PAGE 0B: HCPCS REFERENCE
+# ============================================================
+elif page == "📋 HCPCS Reference":
+    st.title("📋 HIV HCPCS Code Reference")
+    st.markdown("""
+    This page provides full transparency into the HCPCS codes used to identify HIV-related services 
+    throughout this dashboard. Every code listed below is used when filtering the TMSIS claims data 
+    to the **HIV Services**, **Provider Directory**, and **Trends** pages.
+    """)
+
+    st.markdown("---")
+
+    # Load the live table from MotherDuck
+    df_hcpcs = run_query("""
+        SELECT hcpcs_code, category, description
+        FROM hiv_hcpcs_reference
+        ORDER BY category, hcpcs_code
+    """)
+
+    # Summary metrics
+    col1, col2 = st.columns(2)
+    col1.metric("Total HCPCS Codes", len(df_hcpcs))
+    col2.metric("Service Categories", df_hcpcs["category"].nunique())
+
+    st.markdown("---")
+
+    # Category summary
+    st.subheader("Codes by Category")
+    df_cat_count = df_hcpcs.groupby("category").size().reset_index(name="code_count").sort_values("code_count", ascending=False)
+    st.bar_chart(df_cat_count.set_index("category")["code_count"], use_container_width=True)
+
+    st.markdown("---")
+
+    # Category filter
+    selected_category = st.selectbox(
+        "Filter by Category",
+        ["All Categories"] + sorted(df_hcpcs["category"].unique().tolist())
+    )
+
+    if selected_category != "All Categories":
+        df_display = df_hcpcs[df_hcpcs["category"] == selected_category]
+    else:
+        df_display = df_hcpcs
+
+    st.markdown(f"**{len(df_display)} codes displayed**")
+
+    st.dataframe(
+        df_display,
+        use_container_width=True,
+        hide_index=True,
+        height=600,
+        column_config={
+            "hcpcs_code": "HCPCS Code",
+            "category": "Service Category",
+            "description": "Description",
+        }
+    )
+
+    # Download
+    csv = df_hcpcs.to_csv(index=False)
+    st.download_button("📥 Download Full HCPCS Reference Table (CSV)", csv, "hiv_hcpcs_reference.csv", "text/csv")
+
+    st.markdown("---")
+
+    st.subheader("Methodology & Sources")
+    st.markdown("""
+    **Code Selection Criteria**
+
+    Codes were selected based on two principles: (1) the code must be **explicitly related to HIV 
+    prevention, diagnosis, treatment, monitoring, or associated opportunistic infection management**, 
+    and (2) the code must appear in established HIV claims-based identification algorithms or official 
+    CMS HIV-specific code sets.
+
+    Broad, non-HIV-specific codes (e.g., general clinic visits, telephone evaluations, generic case 
+    management) were intentionally excluded to minimize false positives and ensure that the HIV service 
+    flag is meaningful for provider gap analysis.
+
+    **Sources Used**
+
+    1. **CMS HCPCS 2025 Annual Code File** (January 2025 release) — The official federal code set was 
+       searched systematically for all codes with HIV, antiretroviral, PrEP, viral load, CD4, and 
+       opportunistic infection keywords. This identified PrEP-specific codes (J0739, J0750, J0751, 
+       G0011–G0013, Q0516–Q0521), injectable ARV codes (J0741, J1746, J1961), HIV screening codes 
+       (G0432, G0433, G0435, G0475), and HIV quality measure codes (G9242–G9247, G8500).
+
+    2. **Macinski SE, Gunn JKL, Goyal M, et al.** *"Validation of an Optimized Algorithm for Identifying 
+       Persons Living with Diagnosed HIV From New York State Medicaid Data, 2006–2014."* American Journal 
+       of Epidemiology, 2019. — This validated algorithm uses specific lab test codes (87536, 87901, 87903, 
+       87904, 87906), ARV claims, and opportunistic infection treatments as markers for identifying PLWDH 
+       in Medicaid claims. The OI treatment codes in our reference table (pentamidine, amphotericin B, 
+       ganciclovir, foscarnet, cidofovir) align with this algorithm.
+
+    **Category Definitions**
+
+    | Category | Definition |
+    |----------|-----------|
+    | **HIV Screening & Diagnosis** | Laboratory tests and assays used to screen for or confirm HIV infection |
+    | **HIV Lab Monitoring** | Ongoing lab tests for managing HIV (viral load, CD4 counts, resistance testing) |
+    | **Antiretroviral Therapy** | Injectable or infusion antiretroviral medications billed via HCPCS J-codes |
+    | **PrEP** | Pre-exposure prophylaxis drugs, counseling, injection, and pharmacy supply fees |
+    | **OI Prophylaxis & Treatment** | Medications for preventing or treating HIV-associated opportunistic infections (PCP, CMV, cryptococcal/fungal infections) |
+    | **HIV Quality Measure** | CMS quality reporting codes specific to HIV care processes and outcomes |
+    | **HIV Supportive Services** | Services addressing HIV treatment side effects or home-based HIV medication administration |
+
+    *This reference table is maintained by NASTAD and will be updated as CMS releases new HCPCS codes 
+    or as clinical guidelines evolve. The table was last updated in February 2026.*
     """)
 
 
