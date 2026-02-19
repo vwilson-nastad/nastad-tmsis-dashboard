@@ -316,7 +316,6 @@ if page == "ℹ️ About":
     | **Data Enrichment** | DuckDB SQL | Joins TMSIS claims with NPI provider data via billing NPI |
     | **Front-End** | Streamlit | Interactive dashboard with live queries, filters, and CSV export |
     | **Hosting** | Streamlit Community Cloud | Free public hosting — no software install required for end users |
-    | **Data Backup** | Cloudflare R2 | Object storage for raw data files |
 
     All queries run **live** against the full dataset — nothing is pre-aggregated or sampled. When you 
     filter by state or view the provider directory, MotherDuck processes the query across all 227 million 
