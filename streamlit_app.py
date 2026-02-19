@@ -48,12 +48,34 @@ selected_states = st.sidebar.multiselect(
     help="Leave empty to show all states"
 )
 
-# Build WHERE clause helper
+# Load years for filter
+years_df = run_query("""
+    SELECT DISTINCT LEFT(CLAIM_FROM_MONTH, 4) AS year
+    FROM tmsis_enriched
+    WHERE CLAIM_FROM_MONTH IS NOT NULL
+    ORDER BY year
+""")
+
+selected_years = st.sidebar.multiselect(
+    "Filter by Year(s)",
+    years_df["year"].tolist(),
+    default=None,
+    help="Leave empty to show all years. Does not apply to Trends page."
+)
+
+# Build WHERE clause helpers
 def state_filter(alias=""):
     col = f'{alias}"Provider Business Practice Location Address State Name"' if alias else '"Provider Business Practice Location Address State Name"'
     if selected_states:
         state_list = ", ".join([f"'{s}'" for s in selected_states])
         return f"AND {col} IN ({state_list})"
+    return ""
+
+def year_filter(alias=""):
+    col = f'{alias}CLAIM_FROM_MONTH' if alias else 'CLAIM_FROM_MONTH'
+    if selected_years:
+        year_list = ", ".join([f"'{y}'" for y in selected_years])
+        return f"AND LEFT({col}, 4) IN ({year_list})"
     return ""
 
 st.sidebar.markdown("---")
@@ -301,9 +323,19 @@ elif page == "🏠 State Overview":
         FROM tmsis_enriched
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter()}
+        {year_filter()}
         GROUP BY 1
         ORDER BY total_claims DESC
     """)
+
+    # Active filters display
+    filter_desc = []
+    if selected_states:
+        filter_desc.append(f"States: {', '.join(selected_states)}")
+    if selected_years:
+        filter_desc.append(f"Years: {', '.join(selected_years)}")
+    if filter_desc:
+        st.caption("Active filters: " + " | ".join(filter_desc))
 
     # Metrics row
     col1, col2, col3, col4 = st.columns(4)
@@ -357,9 +389,19 @@ elif page == "🔬 HIV Services":
         INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter("t.")}
+        {year_filter("t.")}
         GROUP BY 1
         ORDER BY total_claims DESC
     """)
+
+    # Active filters display
+    filter_desc = []
+    if selected_states:
+        filter_desc.append(f"States: {', '.join(selected_states)}")
+    if selected_years:
+        filter_desc.append(f"Years: {', '.join(selected_years)}")
+    if filter_desc:
+        st.caption("Active filters: " + " | ".join(filter_desc))
 
     # Metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -406,6 +448,7 @@ elif page == "🔬 HIV Services":
         INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter("t.")}
+        {year_filter("t.")}
         GROUP BY 1, 2
         ORDER BY total_claims DESC
     """)
@@ -441,6 +484,7 @@ elif page == "🔬 HIV Services":
         INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter("t.")}
+        {year_filter("t.")}
         GROUP BY 1, 2, 3
         ORDER BY total_claims DESC
     """)
@@ -497,9 +541,19 @@ elif page == "👩‍⚕️ Provider Directory":
                 INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
                 WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
                 {state_filter("t.")}
+                {year_filter("t.")}
                 GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
                 ORDER BY total_hiv_claims DESC
             """)
+
+        # Active filters display
+        filter_desc = []
+        if selected_states:
+            filter_desc.append(f"States: {', '.join(selected_states)}")
+        if selected_years:
+            filter_desc.append(f"Years: {', '.join(selected_years)}")
+        if filter_desc:
+            st.caption("Active filters: " + " | ".join(filter_desc))
 
         # Metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -560,6 +614,9 @@ elif page == "👩‍⚕️ Provider Directory":
 elif page == "📈 Trends":
     st.title("📈 HIV Services Trends (2018–2024)")
     st.markdown("Track Medicaid HIV service utilization over time to identify trends in provider participation, claims volume, and beneficiary access.")
+
+    if selected_years:
+        st.info("ℹ️ The **Year filter** does not apply to this page — all years are shown to display the full trend.")
 
     # Monthly trends
     df_monthly = run_query(f"""
