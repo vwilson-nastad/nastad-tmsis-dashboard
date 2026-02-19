@@ -268,23 +268,33 @@ if page == "ℹ️ About":
     This dashboard was developed by **NASTAD** (National Alliance of State & Territorial AIDS Directors) 
     to support health departments and Ryan White HIV/AIDS Program recipients in identifying Medicaid 
     providers delivering HIV-related services, conducting provider gap analyses, and strengthening 
-    coordination between Medicaid and the Ryan White HIV/AIDS Program as part of the national 
-    **Ending the HIV Epidemic (EHE)** initiative.
+    coordination between Medicaid and the Ryan White HIV/AIDS Program.
 
     ---
 
     ### 📊 Primary Data Sources
 
-    **T-MSIS Analytic Files (TAF) — CMS**
-    - **What it is:** The Transformed Medicaid Statistical Information System (T-MSIS) is CMS's 
-      national Medicaid and CHIP claims database. It contains information on Medicaid beneficiaries, 
-      providers, and the services they receive.
-    - **What we use:** Provider-level utilization summary files covering **2018–2024**, which include 
-      billing provider NPIs, HCPCS procedure codes, claim counts, total paid amounts, and unique 
-      beneficiary counts.
-    - **Volume:** Approximately **227 million** claim-level summary records across all states 
-      and territories.
-    - **Source:** [CMS T-MSIS Data](https://www.medicaid.gov/medicaid/data-systems/macbis/transformed-medicaid-statistical-information-system-t-msis/index.html)
+    **Medicaid Provider Spending — HHS Open Data Portal**
+    - **What it is:** Provider-level Medicaid spending data released by the U.S. Department of Health 
+      and Human Services (HHS) through the Medicaid Open Data Portal. The data is derived from the 
+      Transformed Medicaid Statistical Information System (T-MSIS), CMS's comprehensive data system 
+      for collecting Medicaid and CHIP data from all 50 states, the District of Columbia, and U.S. territories. 
+      States submit claims data monthly to CMS, which runs over 6,000 data quality checks on submissions.
+    - **What it contains:** Outpatient and professional claims aggregated to the provider-procedure-month 
+      level, covering **fee-for-service, managed care, and CHIP** claims. Each record includes the billing 
+      provider NPI, servicing provider NPI, HCPCS procedure code, claim month, total claims, total paid 
+      amount, and unique beneficiary count.
+    - **Time period:** January 2018 through December 2024.
+    - **Volume:** Approximately **227 million** claim-level summary records across all states and territories.
+    - **Cell suppression:** To protect beneficiary privacy, rows with fewer than 12 total claims are excluded 
+      from the dataset. This means the data represents the majority of Medicaid spending but excludes 
+      low-volume provider-procedure combinations.
+    - **Data quality note:** This data is only as accurate as the data submitted by each state. T-MSIS has 
+      known data quality issues that vary by state and data element. Approximately two-thirds of Medicaid 
+      spending flows through managed care organizations (MCOs), and the quality of encounter data 
+      submitted by MCOs varies. For detailed information on data quality, refer to CMS's 
+      [DQ Atlas](https://www.medicaid.gov/dq-atlas/welcome).
+    - **Source:** [HHS Open Data Portal — Medicaid Provider Spending](https://opendata.hhs.gov/datasets/medicaid-provider-spending/)
 
     **National Plan and Provider Enumeration System (NPPES) — CMS**
     - **What it is:** The NPPES is CMS's registry of all health care providers assigned a National 
