@@ -28,7 +28,7 @@ st.sidebar.markdown("---")
 
 page = st.sidebar.radio(
     "Navigate",
-    ["🏠 State Overview", "🔬 HIV Services", "👩‍⚕️ Provider Directory", "📈 Trends"],
+    ["ℹ️ About", "🏠 State Overview", "🔬 HIV Services", "👩‍⚕️ Provider Directory", "📈 Trends"],
 )
 
 st.sidebar.markdown("---")
@@ -64,9 +64,113 @@ st.sidebar.caption("Built by NASTAD")
 
 
 # ============================================================
+# PAGE 0: ABOUT
+# ============================================================
+if page == "ℹ️ About":
+    st.title("ℹ️ About This Dashboard")
+
+    st.markdown("""
+    ## NASTAD TMSIS Medicaid Provider Analysis Dashboard
+
+    This dashboard was developed by **NASTAD** (National Alliance of State & Territorial AIDS Directors) 
+    to support health departments and Ryan White HIV/AIDS Program recipients in identifying Medicaid 
+    providers delivering HIV-related services, conducting provider gap analyses, and strengthening 
+    coordination between Medicaid and the Ryan White HIV/AIDS Program as part of the national 
+    **Ending the HIV Epidemic (EHE)** initiative.
+
+    ---
+
+    ### 📊 Primary Data Sources
+
+    **T-MSIS Analytic Files (TAF) — CMS**
+    - **What it is:** The Transformed Medicaid Statistical Information System (T-MSIS) is CMS's 
+      national Medicaid and CHIP claims database. It contains information on Medicaid beneficiaries, 
+      providers, and the services they receive.
+    - **What we use:** Provider-level utilization summary files covering **2018–2024**, which include 
+      billing provider NPIs, HCPCS procedure codes, claim counts, total paid amounts, and unique 
+      beneficiary counts.
+    - **Volume:** Approximately **227 million** claim-level summary records across all states 
+      and territories.
+    - **Source:** [CMS T-MSIS Data](https://www.medicaid.gov/medicaid/data-systems/macbis/transformed-medicaid-statistical-information-system-t-msis/index.html)
+
+    **National Plan and Provider Enumeration System (NPPES) — CMS**
+    - **What it is:** The NPPES is CMS's registry of all healthcare providers assigned a National 
+      Provider Identifier (NPI). It contains provider names, credentials, practice addresses, 
+      organizational affiliations, and healthcare taxonomy codes.
+    - **What we use:** Provider demographic and practice location data to enrich the TMSIS claims, 
+      enabling identification of providers by name, organization, specialty, and geographic location.
+    - **Source:** [CMS NPI Registry](https://npiregistry.cms.hhs.gov/)
+
+    **HIV HCPCS Reference Table — NASTAD**
+    - **What it is:** A curated crosswalk developed by NASTAD that maps HCPCS procedure codes to 
+      HIV-specific service categories.
+    - **Categories:** HIV Lab Testing, Antiretroviral Therapy, PrEP, Care Management, 
+      Case Management, Opportunistic Infection Treatment, and Quality Measures.
+    - **Codes tracked:** 27 HIV-related HCPCS codes across 7 service categories.
+
+    ---
+
+    ### 🏗️ Architecture
+
+    | Component | Technology | Purpose |
+    |-----------|-----------|---------|
+    | **Data Warehouse** | MotherDuck (Cloud DuckDB) | Stores and queries the full 227M row enriched dataset |
+    | **Data Enrichment** | DuckDB SQL | Joins TMSIS claims with NPI provider data via billing NPI |
+    | **Front-End** | Streamlit | Interactive dashboard with live queries, filters, and CSV export |
+    | **Hosting** | Streamlit Community Cloud | Free public hosting — no software install required for end users |
+    | **Data Backup** | Cloudflare R2 | Object storage for raw data files |
+
+    All queries run **live** against the full dataset — nothing is pre-aggregated or sampled. When you 
+    filter by state or view the provider directory, MotherDuck processes the query across all 227 million 
+    records and returns results in seconds.
+
+    ---
+
+    ### 🔍 How To Use This Dashboard
+
+    **For Health Departments & Ryan White Recipients:**
+
+    1. **Select your state(s)** in the sidebar filter to focus on your jurisdiction
+    2. **State Overview** — See total Medicaid provider counts, claims, and spending in your state
+    3. **HIV Services** — Understand which HIV service categories are being billed through Medicaid, 
+       and at what volume
+    4. **Provider Directory** — Identify specific providers billing for HIV services in your state, 
+       including their NPI, organization name, address, and which HIV service categories they provide. 
+       Use this for Ryan White provider network gap analysis.
+    5. **Trends** — Track how HIV service utilization has changed over 2018–2024 in your jurisdiction
+    6. **Download CSV** — Every page includes a download button so you can export data for your own analysis
+
+    ---
+
+    ### ⚠️ Important Caveats
+
+    - **Beneficiary counts** may reflect the same individual counted multiple times across different 
+      providers or service months. These are not deduplicated person-level counts.
+    - **Small cell sizes:** In states or service categories with very few providers or beneficiaries, 
+      exercise caution in interpretation to protect against potential re-identification.
+    - **HCPCS code specificity:** Some codes in the reference table (particularly Care Management codes) 
+      are not exclusively HIV-specific. They capture a broader set of services that may include non-HIV visits.
+    - **Data currency:** This dashboard reflects TMSIS data through 2024. CMS releases data with a lag, 
+      so the most recent months may be incomplete.
+    - **Provider location** is based on the NPI registry practice address and may not reflect every 
+      location where a provider delivers services.
+
+    ---
+
+    ### 📬 Contact
+
+    For questions, feedback, or technical assistance, please contact **NASTAD** at 
+    [nastad.org](https://www.nastad.org).
+
+    *This dashboard is part of NASTAD's technical assistance to support public health departments 
+    in ending the HIV epidemic through improved Medicaid and Ryan White program coordination.*
+    """)
+
+
+# ============================================================
 # PAGE 1: STATE OVERVIEW
 # ============================================================
-if page == "🏠 State Overview":
+elif page == "🏠 State Overview":
     st.title("🏠 State Overview")
     st.markdown("All Medicaid claims aggregated by state from the full TMSIS dataset (2018–2024).")
 
