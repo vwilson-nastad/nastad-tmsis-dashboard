@@ -35,12 +35,51 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] .stMarkdown p,
     section[data-testid="stSidebar"] .stMarkdown li,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] .stRadio label {
+    section[data-testid="stSidebar"] label {
         color: white !important;
     }
     section[data-testid="stSidebar"] hr {
         border-color: #333333;
+    }
+
+    /* Radio button labels in sidebar */
+    section[data-testid="stSidebar"] .stRadio label,
+    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label,
+    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label p,
+    section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label span,
+    section[data-testid="stSidebar"] .stRadio div[data-testid="stMarkdownContainer"] p,
+    section[data-testid="stSidebar"] [data-baseweb="radio"] label,
+    section[data-testid="stSidebar"] [data-baseweb="radio"] div {
+        color: white !important;
+    }
+
+    /* Radio button circles */
+    section[data-testid="stSidebar"] [data-baseweb="radio"] div[data-testid="stMarkdownContainer"] {
+        color: white !important;
+    }
+    section[data-testid="stSidebar"] .stRadio > div {
+        color: white !important;
+    }
+
+    /* Multiselect filter labels and text */
+    section[data-testid="stSidebar"] .stMultiSelect label,
+    section[data-testid="stSidebar"] .stMultiSelect span,
+    section[data-testid="stSidebar"] .stSelectbox label,
+    section[data-testid="stSidebar"] .stSelectbox span {
+        color: white !important;
+    }
+
+    /* All text inside sidebar */
+    section[data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    /* Keep multiselect dropdown and input readable */
+    section[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="tag"] {
+        color: white !important;
+        background-color: #019DE0 !important;
+    }
+    section[data-testid="stSidebar"] [data-baseweb="popover"] * {
+        color: #060606 !important;
     }
 
     /* Metric cards */
