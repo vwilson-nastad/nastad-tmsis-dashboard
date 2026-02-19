@@ -23,9 +23,20 @@ st.markdown("""
         --nastad-yellow: #FFCC11;
     }
 
-    /* Header bar */
+    /* Header bar - keep light so icons are visible */
     header[data-testid="stHeader"] {
-        background-color: #060606;
+        background-color: #FFFFFF !important;
+        border-bottom: 2px solid #019DE0;
+    }
+    /* Ensure header icons and buttons stay visible */
+    header[data-testid="stHeader"] * {
+        color: #060606 !important;
+    }
+    header[data-testid="stHeader"] button {
+        color: #060606 !important;
+    }
+    header[data-testid="stHeader"] svg {
+        fill: #060606 !important;
     }
 
     /* Sidebar styling */
@@ -69,8 +80,13 @@ st.markdown("""
         color: white !important;
     }
 
-    /* All text inside sidebar */
-    section[data-testid="stSidebar"] * {
+    /* All text inside sidebar - force white */
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"],
+    section[data-testid="stSidebar"] .stRadio div,
+    section[data-testid="stSidebar"] [data-baseweb="radio"] div {
         color: white !important;
     }
     /* Keep multiselect dropdown and input readable */
