@@ -559,6 +559,49 @@ elif page == "🔬 HIV Services":
     st.title("🔬 HIV Services Analysis")
     st.markdown("Medicaid claims filtered to HIV-related HCPCS codes, organized by service category.")
 
+    # Load HCPCS reference for filters
+    df_hcpcs_ref = run_query("SELECT hcpcs_code, category, description FROM hiv_hcpcs_reference ORDER BY category, hcpcs_code")
+
+    # Category filter
+    all_hiv_categories = sorted(df_hcpcs_ref["category"].unique().tolist())
+    selected_hiv_cat = st.selectbox("Filter by HIV Service Category", ["All Categories"] + all_hiv_categories, key="hiv_svc_cat")
+
+    # HCPCS code filter - dynamically updates based on category
+    if selected_hiv_cat != "All Categories":
+        available_codes = df_hcpcs_ref[df_hcpcs_ref["category"] == selected_hiv_cat]
+    else:
+        available_codes = df_hcpcs_ref
+
+    code_options = [f"{row['hcpcs_code']} — {row['description']}" for _, row in available_codes.iterrows()]
+    selected_code_labels = st.multiselect("Filter by HCPCS Code(s)", code_options, default=None, help="Leave empty to show all codes in the selected category.")
+    selected_codes = [label.split(" — ")[0] for label in selected_code_labels]
+
+    # Build HCPCS SQL filter
+    def hcpcs_filter():
+        if selected_codes:
+            code_list = ", ".join([f"'{c}'" for c in selected_codes])
+            return f"AND t.HCPCS_CODE IN ({code_list})"
+        elif selected_hiv_cat != "All Categories":
+            cat_codes = available_codes["hcpcs_code"].tolist()
+            code_list = ", ".join([f"'{c}'" for c in cat_codes])
+            return f"AND t.HCPCS_CODE IN ({code_list})"
+        return ""
+
+    # Active filters display
+    filter_desc = []
+    if selected_states:
+        filter_desc.append(f"States: {', '.join(selected_states)}")
+    if selected_years:
+        filter_desc.append(f"Years: {', '.join(selected_years)}")
+    if selected_hiv_cat != "All Categories":
+        filter_desc.append(f"Category: {selected_hiv_cat}")
+    if selected_codes:
+        filter_desc.append(f"Codes: {', '.join(selected_codes)}")
+    if filter_desc:
+        st.caption("Active filters: " + " | ".join(filter_desc))
+
+    st.markdown("---")
+
     # Category summary
     df_cat = run_query(f"""
         SELECT
@@ -572,18 +615,10 @@ elif page == "🔬 HIV Services":
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter("t.")}
         {year_filter("t.")}
+        {hcpcs_filter()}
         GROUP BY 1
         ORDER BY total_claims DESC
     """)
-
-    # Active filters display
-    filter_desc = []
-    if selected_states:
-        filter_desc.append(f"States: {', '.join(selected_states)}")
-    if selected_years:
-        filter_desc.append(f"Years: {', '.join(selected_years)}")
-    if filter_desc:
-        st.caption("Active filters: " + " | ".join(filter_desc))
 
     # Metrics
     col1, col2, col3, col4 = st.columns(4)
@@ -631,6 +666,7 @@ elif page == "🔬 HIV Services":
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter("t.")}
         {year_filter("t.")}
+        {hcpcs_filter()}
         GROUP BY 1, 2
         ORDER BY total_claims DESC
     """)
@@ -667,6 +703,7 @@ elif page == "🔬 HIV Services":
         WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
         {state_filter("t.")}
         {year_filter("t.")}
+        {hcpcs_filter()}
         GROUP BY 1, 2, 3
         ORDER BY total_claims DESC
     """)
@@ -686,7 +723,7 @@ elif page == "🔬 HIV Services":
         }
     )
 
-    csv = df_cat_state.to_csv(index=False)
+    csv = df_code.to_csv(index=False)
     st.download_button("📥 Download HIV Services Data (CSV)", csv, "hiv_services.csv", "text/csv")
 
 
@@ -707,6 +744,32 @@ elif page == "👩‍⚕️ Provider Directory":
             horizontal=True,
             help="Billing = organization submitting the claim. Servicing = individual clinician who delivered care."
         )
+
+        # HCPCS category and code filters
+        df_hcpcs_ref_dir = run_query("SELECT hcpcs_code, category, description FROM hiv_hcpcs_reference ORDER BY category, hcpcs_code")
+        all_hiv_cats_dir = sorted(df_hcpcs_ref_dir["category"].unique().tolist())
+
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            selected_hiv_cat_dir = st.selectbox("Filter by HIV Service Category", ["All Categories"] + all_hiv_cats_dir, key="dir_cat")
+        with col_f2:
+            if selected_hiv_cat_dir != "All Categories":
+                avail_codes_dir = df_hcpcs_ref_dir[df_hcpcs_ref_dir["category"] == selected_hiv_cat_dir]
+            else:
+                avail_codes_dir = df_hcpcs_ref_dir
+            code_opts_dir = [f"{row['hcpcs_code']} — {row['description']}" for _, row in avail_codes_dir.iterrows()]
+            sel_code_labels_dir = st.multiselect("Filter by HCPCS Code(s)", code_opts_dir, default=None, key="dir_codes")
+            sel_codes_dir = [label.split(" — ")[0] for label in sel_code_labels_dir]
+
+        def hcpcs_filter_dir():
+            if sel_codes_dir:
+                code_list = ", ".join([f"'{c}'" for c in sel_codes_dir])
+                return f"AND t.HCPCS_CODE IN ({code_list})"
+            elif selected_hiv_cat_dir != "All Categories":
+                cat_codes = avail_codes_dir["hcpcs_code"].tolist()
+                code_list = ", ".join([f"'{c}'" for c in cat_codes])
+                return f"AND t.HCPCS_CODE IN ({code_list})"
+            return ""
 
         with st.spinner("Loading provider directory..."):
             if view_mode == "Billing Provider":
@@ -733,6 +796,7 @@ elif page == "👩‍⚕️ Provider Directory":
                     WHERE t."Provider Business Practice Location Address State Name" IS NOT NULL
                     {state_filter("t.")}
                     {year_filter("t.")}
+                    {hcpcs_filter_dir()}
                     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
                     ORDER BY total_hiv_claims DESC
                 """)
@@ -765,6 +829,7 @@ elif page == "👩‍⚕️ Provider Directory":
                     WHERE t."Provider Business Practice Location Address State Name" IS NOT NULL
                     {state_filter("t.")}
                     {year_filter("t.")}
+                    {hcpcs_filter_dir()}
                     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
                     ORDER BY total_hiv_claims DESC
                 """)
@@ -798,6 +863,7 @@ elif page == "👩‍⚕️ Provider Directory":
                     WHERE t."Provider Business Practice Location Address State Name" IS NOT NULL
                     {state_filter("t.")}
                     {year_filter("t.")}
+                    {hcpcs_filter_dir()}
                     GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
                     ORDER BY total_hiv_claims DESC
                 """)
@@ -808,10 +874,12 @@ elif page == "👩‍⚕️ Provider Directory":
             filter_desc.append(f"States: {', '.join(selected_states)}")
         if selected_years:
             filter_desc.append(f"Years: {', '.join(selected_years)}")
+        if selected_hiv_cat_dir != "All Categories":
+            filter_desc.append(f"Category: {selected_hiv_cat_dir}")
+        if sel_codes_dir:
+            filter_desc.append(f"Codes: {', '.join(sel_codes_dir)}")
         if filter_desc:
             st.caption("Active filters: " + " | ".join(filter_desc))
-
-        # Metrics
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Providers", f"{len(df_providers):,.0f}")
         col2.metric("Total HIV Claims", f"{df_providers['total_hiv_claims'].sum():,.0f}")
