@@ -268,7 +268,8 @@ if page == "ℹ️ About":
     This dashboard was developed by **NASTAD** (National Alliance of State & Territorial AIDS Directors) 
     to support health departments and Ryan White HIV/AIDS Program recipients in identifying Medicaid 
     providers delivering HIV-related services, conducting provider gap analyses, and strengthening 
-    coordination between Medicaid and the Ryan White HIV/AIDS Program.
+    coordination between Medicaid and the Ryan White HIV/AIDS Program as part of the national 
+    **Ending the HIV Epidemic (EHE)** initiative.
 
     ---
 
@@ -326,6 +327,7 @@ if page == "ℹ️ About":
     | **Data Enrichment** | DuckDB SQL | Joins TMSIS claims with NPI provider data via billing NPI |
     | **Front-End** | Streamlit | Interactive dashboard with live queries, filters, and CSV export |
     | **Hosting** | Streamlit Community Cloud | Free public hosting — no software install required for end users |
+    | **Data Backup** | Cloudflare R2 | Object storage for raw data files |
 
     All queries run **live** against the full dataset — nothing is pre-aggregated or sampled. When you 
     filter by state or view the provider directory, MotherDuck processes the query across all 227 million 
@@ -368,7 +370,8 @@ if page == "ℹ️ About":
 
     ### 📬 Contact
 
-    For questions, feedback, or technical assistance, please contact **medicaidscp@nastad.org** (https://www.nastad.org).
+    For questions, feedback, or technical assistance, please contact **NASTAD** at 
+    [nastad.org](https://www.nastad.org).
 
     *This dashboard is part of NASTAD's technical assistance to support public health departments 
     in ending the HIV epidemic through improved Medicaid and Ryan White program coordination.*
@@ -697,33 +700,107 @@ elif page == "👩‍⚕️ Provider Directory":
     if not selected_states:
         st.warning("⚠️ Please select at least one state in the sidebar to load the provider directory. Loading all states at once would return too many results.")
     else:
+        # View toggle
+        view_mode = st.radio(
+            "View by",
+            ["Billing Provider", "Servicing Provider", "Billing + Servicing Combined"],
+            horizontal=True,
+            help="Billing = organization submitting the claim. Servicing = individual clinician who delivered care."
+        )
+
         with st.spinner("Loading provider directory..."):
-            df_providers = run_query(f"""
-                SELECT
-                    t.BILLING_PROVIDER_NPI_NUM AS npi,
-                    COALESCE(
-                        t."Provider Organization Name (Legal Business Name)",
-                        t."Provider First Name" || ' ' || t."Provider Last Name (Legal Name)"
-                    ) AS provider_name,
-                    t."Provider Credential Text" AS credentials,
-                    t."Healthcare Provider Taxonomy Code_1" AS taxonomy,
-                    t."Provider First Line Business Practice Location Address" AS address,
-                    t."Provider Business Practice Location Address City Name" AS city,
-                    t."Provider Business Practice Location Address State Name" AS state,
-                    t."Provider Business Practice Location Address Postal Code" AS zip,
-                    COUNT(DISTINCT h.category) AS hiv_service_categories,
-                    STRING_AGG(DISTINCT h.category, ', ' ORDER BY h.category) AS categories_served,
-                    SUM(t.TOTAL_CLAIMS) AS total_hiv_claims,
-                    SUM(t.TOTAL_UNIQUE_BENEFICIARIES) AS total_beneficiaries,
-                    ROUND(SUM(t.TOTAL_PAID), 2) AS total_paid
-                FROM tmsis_enriched t
-                INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
-                WHERE "Provider Business Practice Location Address State Name" IS NOT NULL
-                {state_filter("t.")}
-                {year_filter("t.")}
-                GROUP BY 1, 2, 3, 4, 5, 6, 7, 8
-                ORDER BY total_hiv_claims DESC
-            """)
+            if view_mode == "Billing Provider":
+                df_providers = run_query(f"""
+                    SELECT
+                        t.BILLING_PROVIDER_NPI_NUM AS npi,
+                        b.entity_type,
+                        COALESCE(b.org_name, b.first_name || ' ' || b.last_name) AS provider_name,
+                        b.credentials,
+                        b.taxonomy_1 AS taxonomy,
+                        b.address,
+                        b.city,
+                        b.state,
+                        b.zip,
+                        b.phone,
+                        COUNT(DISTINCT h.category) AS hiv_service_categories,
+                        STRING_AGG(DISTINCT h.category, ', ' ORDER BY h.category) AS categories_served,
+                        SUM(t.TOTAL_CLAIMS) AS total_hiv_claims,
+                        SUM(t.TOTAL_UNIQUE_BENEFICIARIES) AS total_beneficiaries,
+                        ROUND(SUM(t.TOTAL_PAID), 2) AS total_paid
+                    FROM tmsis_enriched t
+                    INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
+                    LEFT JOIN npi_lookup b ON t.BILLING_PROVIDER_NPI_NUM = b.NPI
+                    WHERE t."Provider Business Practice Location Address State Name" IS NOT NULL
+                    {state_filter("t.")}
+                    {year_filter("t.")}
+                    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+                    ORDER BY total_hiv_claims DESC
+                """)
+
+            elif view_mode == "Servicing Provider":
+                df_providers = run_query(f"""
+                    SELECT
+                        t.SERVICING_PROVIDER_NPI_NUM AS npi,
+                        s.entity_type,
+                        COALESCE(
+                            CASE WHEN s.entity_type = '2' THEN s.org_name
+                                 ELSE s.first_name || ' ' || s.last_name END,
+                            'Unknown'
+                        ) AS provider_name,
+                        s.credentials,
+                        s.taxonomy_1 AS taxonomy,
+                        s.address,
+                        s.city,
+                        s.state,
+                        s.zip,
+                        s.phone,
+                        COUNT(DISTINCT h.category) AS hiv_service_categories,
+                        STRING_AGG(DISTINCT h.category, ', ' ORDER BY h.category) AS categories_served,
+                        SUM(t.TOTAL_CLAIMS) AS total_hiv_claims,
+                        SUM(t.TOTAL_UNIQUE_BENEFICIARIES) AS total_beneficiaries,
+                        ROUND(SUM(t.TOTAL_PAID), 2) AS total_paid
+                    FROM tmsis_enriched t
+                    INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
+                    LEFT JOIN npi_lookup s ON t.SERVICING_PROVIDER_NPI_NUM = s.NPI
+                    WHERE t."Provider Business Practice Location Address State Name" IS NOT NULL
+                    {state_filter("t.")}
+                    {year_filter("t.")}
+                    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+                    ORDER BY total_hiv_claims DESC
+                """)
+
+            else:  # Billing + Servicing Combined
+                df_providers = run_query(f"""
+                    SELECT
+                        t.BILLING_PROVIDER_NPI_NUM AS billing_npi,
+                        COALESCE(b.org_name, b.first_name || ' ' || b.last_name) AS billing_name,
+                        b.entity_type AS billing_entity_type,
+                        t.SERVICING_PROVIDER_NPI_NUM AS servicing_npi,
+                        COALESCE(
+                            CASE WHEN s.entity_type = '2' THEN s.org_name
+                                 ELSE s.first_name || ' ' || s.last_name END,
+                            'Unknown'
+                        ) AS servicing_name,
+                        s.credentials AS servicing_credentials,
+                        s.taxonomy_1 AS servicing_taxonomy,
+                        b.city,
+                        b.state,
+                        b.zip,
+                        COUNT(DISTINCT h.category) AS hiv_service_categories,
+                        STRING_AGG(DISTINCT h.category, ', ' ORDER BY h.category) AS categories_served,
+                        SUM(t.TOTAL_CLAIMS) AS total_hiv_claims,
+                        SUM(t.TOTAL_UNIQUE_BENEFICIARIES) AS total_beneficiaries,
+                        ROUND(SUM(t.TOTAL_PAID), 2) AS total_paid
+                    FROM tmsis_enriched t
+                    INNER JOIN hiv_hcpcs_reference h ON t.HCPCS_CODE = h.hcpcs_code
+                    LEFT JOIN npi_lookup b ON t.BILLING_PROVIDER_NPI_NUM = b.NPI
+                    LEFT JOIN npi_lookup s ON t.SERVICING_PROVIDER_NPI_NUM = s.NPI
+                    WHERE t."Provider Business Practice Location Address State Name" IS NOT NULL
+                    {state_filter("t.")}
+                    {year_filter("t.")}
+                    GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+                    ORDER BY total_hiv_claims DESC
+                """)
 
         # Active filters display
         filter_desc = []
@@ -736,7 +813,7 @@ elif page == "👩‍⚕️ Provider Directory":
 
         # Metrics
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("HIV Providers", f"{len(df_providers):,.0f}")
+        col1.metric("Providers", f"{len(df_providers):,.0f}")
         col2.metric("Total HIV Claims", f"{df_providers['total_hiv_claims'].sum():,.0f}")
         col3.metric("Beneficiaries Served", f"{df_providers['total_beneficiaries'].sum():,.0f}")
         col4.metric("Total Paid", f"${df_providers['total_paid'].sum():,.2f}")
@@ -744,7 +821,8 @@ elif page == "👩‍⚕️ Provider Directory":
         st.markdown("---")
 
         # Category filter
-        all_categories = sorted(df_providers["categories_served"].str.split(", ").explode().unique())
+        cat_col = "categories_served"
+        all_categories = sorted(df_providers[cat_col].dropna().str.split(", ").explode().unique())
         selected_category = st.selectbox("Filter by HIV Service Category", ["All"] + list(all_categories))
 
         # Search box
@@ -753,7 +831,7 @@ elif page == "👩‍⚕️ Provider Directory":
         df_display = df_providers.copy()
 
         if selected_category != "All":
-            df_display = df_display[df_display["categories_served"].str.contains(selected_category, na=False)]
+            df_display = df_display[df_display[cat_col].str.contains(selected_category, na=False)]
 
         if search:
             mask = df_display.apply(lambda row: search.lower() in str(row.values).lower(), axis=1)
@@ -761,17 +839,16 @@ elif page == "👩‍⚕️ Provider Directory":
 
         st.markdown(f"**{len(df_display):,} providers found**")
 
-        st.dataframe(
-            df_display,
-            use_container_width=True,
-            hide_index=True,
-            height=600,
-            column_config={
-                "npi": "NPI",
-                "provider_name": "Provider Name",
-                "credentials": "Credentials",
-                "taxonomy": "Taxonomy",
-                "address": "Address",
+        # Column config based on view mode
+        if view_mode == "Billing + Servicing Combined":
+            col_config = {
+                "billing_npi": "Billing NPI",
+                "billing_name": "Billing Provider",
+                "billing_entity_type": "Billing Type",
+                "servicing_npi": "Servicing NPI",
+                "servicing_name": "Servicing Provider",
+                "servicing_credentials": "Credentials",
+                "servicing_taxonomy": "Taxonomy",
                 "city": "City",
                 "state": "State",
                 "zip": "ZIP",
@@ -781,6 +858,31 @@ elif page == "👩‍⚕️ Provider Directory":
                 "total_beneficiaries": st.column_config.NumberColumn("Beneficiaries", format="%d"),
                 "total_paid": st.column_config.NumberColumn("Total Paid ($)", format="$%.2f"),
             }
+        else:
+            col_config = {
+                "npi": "NPI",
+                "entity_type": "Entity Type",
+                "provider_name": "Provider Name",
+                "credentials": "Credentials",
+                "taxonomy": "Taxonomy",
+                "address": "Address",
+                "city": "City",
+                "state": "State",
+                "zip": "ZIP",
+                "phone": "Phone",
+                "hiv_service_categories": st.column_config.NumberColumn("# Categories", format="%d"),
+                "categories_served": "HIV Categories Served",
+                "total_hiv_claims": st.column_config.NumberColumn("HIV Claims", format="%d"),
+                "total_beneficiaries": st.column_config.NumberColumn("Beneficiaries", format="%d"),
+                "total_paid": st.column_config.NumberColumn("Total Paid ($)", format="$%.2f"),
+            }
+
+        st.dataframe(
+            df_display,
+            use_container_width=True,
+            hide_index=True,
+            height=600,
+            column_config=col_config
         )
 
         csv = df_display.to_csv(index=False)
